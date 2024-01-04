@@ -1,8 +1,9 @@
 import xml.sax
 from Record import Record
+import SleepDataConverter
 
 supportedTypes = ["HKQuantityTypeIdentifierBodyMass", "HKQuantityTypeIdentifierStepCount",
-                  "HKQuantityTypeIdentifierDistanceWalkingRunning"]
+                  "HKQuantityTypeIdentifierDistanceWalkingRunning", "HKQuantityTypeIdentifierHeartRate", "HKQuantityTypeIdentifierHeartRateVariabilitySDNN", "HKCategoryTypeIdentifierSleepAnalysis" ]
 
 records = []
 
@@ -21,12 +22,16 @@ class AppleHealthExport(xml.sax.ContentHandler):
                     value = v
 
             if recordType in supportedTypes:
-                record = Record(recordType, startTime, endTime, value)
-                records.append(record)
+                if(recordType == "HKCategoryTypeIdentifierSleepAnalysis"):
+                    record = SleepDataConverter.createRecord(recordType, startTime, endTime, value)
+                    records.append(record)
+                else:
+                    record = Record(recordType, startTime, endTime, value)
+                    records.append(record)
 
 
 def parse(filename):
-    print "Reading the XML file... This might take some time..."
+    print("Reading the XML file... This might take some time...")
     parser = xml.sax.make_parser()
     parser.setContentHandler(AppleHealthExport())
     parser.parse(open(filename, "r"))

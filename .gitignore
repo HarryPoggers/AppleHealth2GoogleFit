@@ -106,3 +106,4 @@ config.py
 
 *.xml
 config.py
+.vscode/settings.json

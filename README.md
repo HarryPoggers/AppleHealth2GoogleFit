@@ -5,8 +5,10 @@ This is a simple script to move data from Apple Health to Google Fit.
 
 Currently migrating:
 - Steps 
-- Distance 
+- Distance (currently having issues) 
 - Weight
+- Heart Rate
+- Sleep Data
 
 ## Installation
 
@@ -28,6 +30,8 @@ Easiest Way:
 - https://www.googleapis.com/auth/fitness.activity.write (for steps)
 - https://www.googleapis.com/auth/fitness.body.write (for weight)
 - https://www.googleapis.com/auth/fitness.location.write (for distance)
+- https://www.googleapis.com/auth/fitness.heart_rate.write (for heart rate)
+- https://www.googleapis.com/auth/fitness.sleep.write (for sleep data)
 4. Click on *Exchange auth code for token* 
 5. Rename `config.py.example` to `config.py` and add the access token
 

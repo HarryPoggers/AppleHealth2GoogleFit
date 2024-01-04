@@ -9,14 +9,14 @@ def getDataSources():
     url = "https://www.googleapis.com/fitness/v1/users/me/dataSources"
 
     headers = { 'content-type': 'application/json',
-                'Authorization': 'Bearer %s' % ACCESS_TOKEN }
+                'Authorization': 'Bearer %s' % config.accessToken }
     r = requests.get(url, headers=headers)
 
     if r.status_code == 200:
         return True
     else:
-        print r.status_code
-        print r.content
+        print(r.status_code)
+        print(r.content)
         return False
 
 
@@ -57,8 +57,8 @@ def createStepDataSource():
         dataSourceId =response['dataStreamId']
         return dataSourceId
     else:
-        print r.status_code
-        print r.content
+        print(r.status_code)
+        print(r.content)
         return False
 
 
@@ -99,8 +99,8 @@ def createWeightDataSource():
         dataSourceId =response['dataStreamId']
         return dataSourceId
     else:
-        print r.status_code
-        print r.content
+        print(r.status_code)
+        print(r.content)
         return False
 
 
@@ -141,8 +141,90 @@ def createDistanceDataSource():
         dataSourceId =response['dataStreamId']
         return dataSourceId
     else:
-        print r.status_code
-        print r.content
+        print(r.status_code)
+        print(r.content)
+        return False
+    
+def createHeartRateDataSource():
+    url = "https://www.googleapis.com/fitness/v1/users/me/dataSources"
+
+    headers = { 'content-type': 'application/json',
+                'Authorization': 'Bearer %s' % config.accessToken }
+    data = {
+        "dataStreamName": "AppleHeartRateDataSource",
+        "type": "derived",
+        "application": {
+            "name": "AppleHealth2GoogleFit",
+            "version": "1"
+        },
+        "dataType": {
+            "field": [
+                {
+                    "name": "bpm",
+                    "format": "floatPoint"
+                }
+            ],
+            "name": "com.google.heart_rate.bpm"
+        },
+        "device": {
+            "manufacturer": "Apple",
+            "model": "RESTAPI",
+            "type": "tablet",
+            "uid": str(randint(0, 1000)),
+            "version": "1"
+        }
+    }
+
+    r = requests.post(url, headers=headers, data=json.dumps(data))
+
+    if r.status_code == 200:
+        response = json.loads(r.content)
+        dataSourceId =response['dataStreamId']
+        return dataSourceId
+    else:
+        print(r.status_code)
+        print(r.content)
+        return False
+    
+def createSleepDataSource():
+    url = "https://www.googleapis.com/fitness/v1/users/me/dataSources"
+
+    headers = { 'content-type': 'application/json',
+                'Authorization': 'Bearer %s' % config.accessToken }
+    data = {
+        "dataStreamName": "AppleSleepDataSource",
+        "type": "derived",
+        "application": {
+            "name": "AppleHealth2GoogleFit",
+            "version": "1"
+        },
+        "dataType": {
+            "field": [
+                {
+                    "name": "sleep_segment_type",
+                    "format": "integer"
+                }
+            ],
+            "name": "com.google.sleep.segment"
+        },
+        "device": {
+            "manufacturer": "Apple",
+            "model": "RESTAPI",
+            "type": "tablet",
+            "uid": str(randint(0, 1000)),
+            "version": "1"
+        }
+    }
+
+    r = requests.post(url, headers=headers, data=json.dumps(data))
+
+    if r.status_code == 200:
+        response = json.loads(r.content)
+        dataSourceId =response['dataStreamId']
+        return dataSourceId
+    else:
+        print(r.status_code)
+        print(r.content)
         return False
 
 def sendPoints(dataSourceId,records):
@@ -202,9 +284,47 @@ def sendPoints(dataSourceId,records):
                 ]
             }
             dataPoints.append(point);
+    
+    if records[0].recordType == "HKQuantityTypeIdentifierHeartRate" or records[0].recordType == "HKQuantityTypeIdentifierHeartRateVariabilitySDNN":
+
+        for record in records:
+            endTimeNanos = record.endTime*1000000
+            if endTimeNanos > 1546513741000000000:
+                endTimeNanos = 1546513741000000000
+            point = {
+                "dataTypeName": "com.google.heart_rate.bpm",
+                "startTimeNanos": record.startTime*1000000,
+                "endTimeNanos": record.endTime*1000000,
+                "value": [
+                    {
+                        "fpVal": record.value
+                    }
+                ]
+            }
+            dataPoints.append(point);
+    
+    if records[0].recordType == "HKCategoryTypeIdentifierSleepAnalysis":
+
+        for record in records:
+            endTimeNanos = record.endTime*1000000
+            if endTimeNanos > 1546513741000000000:
+                endTimeNanos = 1546513741000000000
+            point = {
+                "dataTypeName": "com.google.sleep.segment",
+                "startTimeNanos": record.startTime*1000000,
+                "endTimeNanos": record.endTime*1000000,
+                "value": [
+                    {
+                        "intVal": int(record.value)
+                    }
+                ]
+            }
+            dataPoints.append(point);
 
     minStartTime = records[0].startTime
     maxEndTime = records[len(records)-1].endTime
+
+    print("Sending " + str(len(dataPoints)))
 
     for points in chunks(dataPoints, 10000):
         addData(dataSourceId,points,minStartTime,maxEndTime)
@@ -230,12 +350,12 @@ def addData(dataSourceId,dataPoints,minStartTime ,maxEndTime):
     r = requests.patch(url, headers=headers, data=json.dumps(data))
 
     if r.status_code == 200:
-        print str(len(dataPoints))  + " dataPoints : " + dataSourceId
+        print(str(len(dataPoints))  + " dataPoints : " + dataSourceId)
 
         return True
     else:
-        print r.status_code
-        print r.content
+        print(r.status_code)
+        print(r.content)
         return False
 
 
