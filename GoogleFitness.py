@@ -321,14 +321,22 @@ def sendPoints(dataSourceId,records):
             }
             dataPoints.append(point);
 
-    minStartTime = records[0].startTime
-    maxEndTime = records[len(records)-1].endTime
-
     print("Sending " + str(len(dataPoints)))
 
     for points in chunks(dataPoints, 10000):
+        (minStartTime,maxEndTime) = getTimes(points)
         addData(dataSourceId,points,minStartTime,maxEndTime)
 
+
+def getTimes(dataPoints):
+    minStartTime = dataPoints[0]['startTimeNanos']
+    maxEndTime = dataPoints[0]['endTimeNanos']
+    for point in dataPoints:
+        if point['startTimeNanos'] < minStartTime:
+            minStartTime = point['startTimeNanos']
+        if point['endTimeNanos'] > maxEndTime:
+            maxEndTime = point['endTimeNanos']
+    return (minStartTime,maxEndTime)
 
 def chunks(l, n):
     for i in range(0, len(l), n):
@@ -336,14 +344,14 @@ def chunks(l, n):
 
 def addData(dataSourceId,dataPoints,minStartTime ,maxEndTime):
 
-    url = "https://www.googleapis.com/fitness/v1/users/me/dataSources/" + dataSourceId + "/datasets/" +str(minStartTime*1000000) + "-"+ str(maxEndTime*1000000)
+    url = "https://www.googleapis.com/fitness/v1/users/me/dataSources/" + dataSourceId + "/datasets/" +str(minStartTime) + "-"+ str(maxEndTime)
 
     headers = { 'content-type': 'application/json',
                 'Authorization': 'Bearer %s' % config.accessToken }
     data = {
         "dataSourceId": dataSourceId,
-        "minStartTimeNs": minStartTime*1000000,
-        "maxEndTimeNs": maxEndTime*1000000,
+        "minStartTimeNs": minStartTime,
+        "maxEndTimeNs": maxEndTime,
         "point": dataPoints
     }
 

@@ -24,10 +24,12 @@ class AppleHealthExport(xml.sax.ContentHandler):
             if recordType in supportedTypes:
                 if(recordType == "HKCategoryTypeIdentifierSleepAnalysis"):
                     record = SleepDataConverter.createRecord(recordType, startTime, endTime, value)
-                    records.append(record)
+                    if(record.startTime < record.endTime):
+                        records.append(record)
                 else:
                     record = Record(recordType, startTime, endTime, value)
-                    records.append(record)
+                    if(record.startTime < record.endTime):
+                        records.append(record)
 
 
 def parse(filename):
