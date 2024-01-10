@@ -5,7 +5,7 @@ This is a simple script to move data from Apple Health to Google Fit.
 
 Currently migrating:
 - Steps 
-- Distance (currently having issues) 
+- Distance 
 - Weight
 - Heart Rate
 - Sleep Data

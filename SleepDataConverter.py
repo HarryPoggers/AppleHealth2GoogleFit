@@ -17,6 +17,4 @@ def convertEnum(value):
 
 def createRecord(recordType, startTime, endTime, value):
     'Creates a Sleep Record'
-    print("Creating Sleep Record for: " + startTime + " to " + endTime + " with value: " + value + "...")
-    print("Converted value: " + str(convertEnum(value)))
     return Record(recordType, startTime, endTime, convertEnum(value))

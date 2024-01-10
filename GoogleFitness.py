@@ -251,17 +251,14 @@ def sendPoints(dataSourceId,records):
 
     if records[0].recordType == "HKQuantityTypeIdentifierStepCount":
 
-        for record in records:            
-            endTimeNanos = record.endTime*1000000
-            if endTimeNanos > 1546513741000000000:
-                endTimeNanos = 1546513741000000000
+        for record in records:
             point = {
                 "dataTypeName": "com.google.step_count.delta",
                 "startTimeNanos": record.startTime*1000000,
                 "endTimeNanos": record.endTime*1000000,
                 "value": [
                     {
-                        "intVal": record.value
+                        "intVal": getValidatedStepCount(record.value, record.startTime, record.endTime)
                     }
                 ]
             }
@@ -323,14 +320,31 @@ def sendPoints(dataSourceId,records):
 
     print("Sending " + str(len(dataPoints)))
 
-    for points in chunks(dataPoints, 10000):
+    chunkSize = 200
+    i = 0
+    for points in chunks(dataPoints, chunkSize):
+        i = i + 1
         (minStartTime,maxEndTime) = getTimes(points)
-        addData(dataSourceId,points,minStartTime,maxEndTime)
+        addData(dataSourceId,points,minStartTime,maxEndTime,getPercentComplete(dataPoints,i,chunkSize),False)
 
+
+def getValidatedStepCount(value, startTimeStamp, endTimeStamp):
+    'Google Fit requires the step count to be between 0 and 10 steps per second, so we validate here and send the max if it is over'
+    nanoStart = startTimeStamp*1000000
+    nanoEnd = endTimeStamp*1000000
+    seconds = (nanoEnd - nanoStart)/1000000000
+    if value/seconds > 10:
+        return 10*seconds
+    else:
+        return value
+
+
+def getPercentComplete(dataPoints,i,chunkSize):
+    return str(int((i+1)*chunkSize/len(dataPoints)*100)) + "%"
 
 def getTimes(dataPoints):
     minStartTime = dataPoints[0]['startTimeNanos']
-    maxEndTime = dataPoints[0]['endTimeNanos']
+    maxEndTime = dataPoints[len(dataPoints)-1]['endTimeNanos']
     for point in dataPoints:
         if point['startTimeNanos'] < minStartTime:
             minStartTime = point['startTimeNanos']
@@ -342,7 +356,7 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i+n]
 
-def addData(dataSourceId,dataPoints,minStartTime ,maxEndTime):
+def addData(dataSourceId,dataPoints,minStartTime ,maxEndTime, percentComplete,retry):
 
     url = "https://www.googleapis.com/fitness/v1/users/me/dataSources/" + dataSourceId + "/datasets/" +str(minStartTime) + "-"+ str(maxEndTime)
 
@@ -358,12 +372,19 @@ def addData(dataSourceId,dataPoints,minStartTime ,maxEndTime):
     r = requests.patch(url, headers=headers, data=json.dumps(data))
 
     if r.status_code == 200:
-        print(str(len(dataPoints))  + " dataPoints : " + dataSourceId)
+        print(percentComplete + " :: " + str(len(dataPoints))  + " dataPoints : " + dataSourceId)
 
         return True
     else:
         print(r.status_code)
         print(r.content)
+        if retry:
+            print(dataPoints)
+            exit()
+        for point in dataPoints:
+            # Try to add each point individually if the batch fails
+            # dump the point to the console so we can see what failed
+            addData(dataSourceId,[point],point['startTimeNanos'],point['endTimeNanos'],"RETRY",True)
         return False
 
 
