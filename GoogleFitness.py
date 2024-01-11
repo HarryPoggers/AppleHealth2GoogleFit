@@ -320,7 +320,7 @@ def sendPoints(dataSourceId,records):
 
     print("Sending " + str(len(dataPoints)))
 
-    chunkSize = 200
+    chunkSize = 10000
     i = 0
     for points in chunks(dataPoints, chunkSize):
         i = i + 1
@@ -339,18 +339,20 @@ def getValidatedStepCount(value, startTimeStamp, endTimeStamp):
         return value
 
 
-def getPercentComplete(dataPoints,i,chunkSize):
-    return str(int((i+1)*chunkSize/len(dataPoints)*100)) + "%"
+def getPercentComplete(dataPoints, i, chunkSize):
+    totalChunks = len(dataPoints) // chunkSize
+    percentComplete = (i + 1) / totalChunks * 100
+    return str(int(percentComplete)) + "%"
 
 def getTimes(dataPoints):
     minStartTime = dataPoints[0]['startTimeNanos']
-    maxEndTime = dataPoints[len(dataPoints)-1]['endTimeNanos']
+    maxEndTime = dataPoints[len(dataPoints) - 1]['endTimeNanos']
     for point in dataPoints:
         if point['startTimeNanos'] < minStartTime:
             minStartTime = point['startTimeNanos']
         if point['endTimeNanos'] > maxEndTime:
             maxEndTime = point['endTimeNanos']
-    return (minStartTime,maxEndTime)
+    return (minStartTime, maxEndTime)
 
 def chunks(l, n):
     for i in range(0, len(l), n):
